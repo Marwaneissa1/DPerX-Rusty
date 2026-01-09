@@ -1,0 +1,84 @@
+<div class="app-layout">
+    <div class="titlebar">
+        <div class="titlebar-drag-region" data-tauri-drag-region>
+            <div class="titlebar-brand">
+                <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="url(#gradient)" />
+                    <path d="M16 8L24 16L16 24L8 16L16 8Z" fill="white" opacity="0.9" />
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                            <stop offset="0%" stop-color="var(--color-accent-primary)" />
+                            <stop offset="100%" stop-color="var(--color-accent-secondary)" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="titlebar-title">DPerX - Rusty <span class="titlebar-author">by kiocode</span></span>
+            </div>
+        </div>
+        <button class="attach-button" (click)="attachToProcess()" type="button" title="Attach to Process">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+                />
+            </svg>
+            <span>Attach</span>
+        </button>
+        <div class="titlebar-controls">
+            <button class="titlebar-button" (click)="minimizeWindow()" type="button">
+                <svg width="12" height="12" viewBox="0 0 12 12">
+                    <path d="M0 6h12" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+            </button>
+            <button class="titlebar-button close" (click)="closeWindow()" type="button">
+                <svg width="12" height="12" viewBox="0 0 12 12">
+                    <path d="M0 0L12 12M12 0L0 12" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="app-body">
+        <aside class="sidebar glass-strong">
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item" [class.active]="currentRoute === 'combat'">
+                        <a routerLink="/combat" class="nav-link" (click)="currentRoute = 'combat'">
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                    d="M10 2L2 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-8-5zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H3V7.89l7-4.67v9.77z"
+                                />
+                            </svg>
+                            <span>Combat</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" [class.active]="currentRoute === 'visual'">
+                        <a routerLink="/visual" class="nav-link" (click)="currentRoute = 'visual'">
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                    d="M10 4.5C5.83 4.5 2.27 7.61 1 12c1.27 4.39 4.83 7.5 9 7.5s7.73-3.11 9-7.5c-1.27-4.39-4.83-7.5-9-7.5zM10 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                                />
+                            </svg>
+                            <span>Visual</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" [class.active]="currentRoute === 'gameplay'">
+                        <a routerLink="/gameplay" class="nav-link" (click)="currentRoute = 'gameplay'">
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            <span>Gameplay</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <router-outlet />
+        </main>
+    </div>
+</div>

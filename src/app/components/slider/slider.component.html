@@ -1,0 +1,12 @@
+<div class="slider-container">
+    <input
+        type="range"
+        [value]="value"
+        (input)="onInput($event)"
+        [min]="min"
+        [max]="max"
+        [step]="step"
+        class="option-slider"
+    />
+    <span class="slider-value">{{ value }}</span>
+</div>

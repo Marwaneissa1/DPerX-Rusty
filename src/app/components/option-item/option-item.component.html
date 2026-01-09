@@ -1,0 +1,59 @@
+@if (field.type === "group") {
+    <div class="option-group">
+        <div class="group-header" (click)="toggleGroup()">
+            <svg
+                class="group-icon"
+                [class.expanded]="field.expanded"
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+            >
+                <path
+                    d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"
+                />
+            </svg>
+            <span class="group-label">{{ field.label }}</span>
+        </div>
+        @if (field.expanded && field.children) {
+            <div class="group-children">
+                @for (child of field.children; track child.id) {
+                    <app-option-item [field]="child"></app-option-item>
+                }
+            </div>
+        }
+    </div>
+} @else {
+    <div class="option-item">
+        <label class="option-label">{{ field.label }}</label>
+
+        @if (field.type === "text") {
+            <app-text-input [(ngModel)]="field.value"></app-text-input>
+        }
+
+        @if (field.type === "integer") {
+            <app-number-input [(ngModel)]="field.value" [step]="1"></app-number-input>
+        }
+
+        @if (field.type === "float") {
+            <app-number-input [(ngModel)]="field.value" [step]="0.01"></app-number-input>
+        }
+
+        @if (field.type === "slider") {
+            <app-slider
+                [(ngModel)]="field.value"
+                [min]="field.min || 0"
+                [max]="field.max || 100"
+                [step]="field.step || 1"
+            ></app-slider>
+        }
+
+        @if (field.type === "checkbox") {
+            <app-toggle [(ngModel)]="field.value"></app-toggle>
+        }
+
+        @if (field.type === "key") {
+            <app-key-picker [(ngModel)]="field.value"></app-key-picker>
+        }
+    </div>
+}

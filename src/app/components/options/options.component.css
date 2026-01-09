@@ -1,0 +1,14 @@
+.options-container {
+    padding: var(--spacing-xl);
+}
+
+.options-grid {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 768px) {
+    .options-container {
+        padding: var(--spacing-md);
+    }
+}

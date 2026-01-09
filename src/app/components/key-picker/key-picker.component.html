@@ -1,0 +1,13 @@
+<div class="key-picker" (keydown)="onKeyDown($event)" tabindex="0">
+    <button type="button" class="key-button" [class.listening]="isListening" (click)="startListening()">
+        @if (!isListening && value) {
+            <span>{{ value }}</span>
+        }
+        @if (!isListening && !value) {
+            <span class="placeholder">Click to bind</span>
+        }
+        @if (isListening) {
+            <span class="listening-text">Press any key...</span>
+        }
+    </button>
+</div>

@@ -1,0 +1,46 @@
+.option-input {
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-right: 32px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    transition: all var(--transition-fast);
+    width: 100%;
+    position: relative;
+}
+
+.option-input:focus {
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 0 3px var(--color-accent-subtle);
+    outline: none;
+}
+
+.option-input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+    cursor: pointer;
+    background: var(--color-surface-secondary);
+    border-left: 1px solid var(--glass-border);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    opacity: 1;
+    transition: background var(--transition-fast);
+}
+
+.option-input[type="number"]::-webkit-inner-spin-button:hover {
+    background: var(--color-surface-hover);
+}
+
+.option-input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
