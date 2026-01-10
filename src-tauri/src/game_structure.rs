@@ -27,9 +27,20 @@ pub struct ClientOffsets {
 
 #[allow(dead_code)]
 pub struct ServerOffsets {
-    pub world_ptr_chain: [usize; 13],
+    pub world_ptr_chain: [usize; 12],
     pub local_player_id: usize,
     pub online_players: usize,
+
+    pub player_gametick: usize,
+    pub player_fixed_coords: usize,
+    pub player_vel: usize,
+    pub player_sim_angle: usize,
+    pub player_current_weapon: usize,
+    pub player_jump_status: usize,
+    pub player_hook: usize,
+    pub player_time_hooked: usize,
+    pub player_selected_weapon: usize,
+    pub player_pos: usize,
 }
 
 #[allow(dead_code)]
@@ -56,10 +67,19 @@ pub static OFFSETS: Offsets = Offsets {
         gametick: 0x30,
     },
     server_offsets: ServerOffsets {
-        world_ptr_chain: [
-            0x338, 0x100, 0x8, 0x1118, 0xCD8, 0x18, 0x320, 0x10, 0xE8, 0x20, 0x8, 0x128, 0x0
-        ],
+        world_ptr_chain: [0x90, 0x140, 0xD0, 0x10, 0xE8, 0x20, 0x10, 0xC8, 0x138, 0x8, 0x0, 0x0],
         local_player_id: 0x64E8,
-        online_players: 0x64EC
+        online_players: 0x64EC,
+
+        player_gametick: 0x652C,
+        player_fixed_coords: 0x6530,
+        player_vel: 0x6538,
+        player_sim_angle: 0x6544,
+        player_current_weapon: 0x6548,
+        player_jump_status: 0x654C,
+        player_hook: 0x6558,
+        player_time_hooked: 0x655C,
+        player_selected_weapon: 0x660C,
+        player_pos: 0x6610,
     },
 };

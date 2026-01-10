@@ -131,6 +131,39 @@
     height: 16px;
 }
 
+.debug-button {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 4px 12px;
+    margin-right: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    transition: all var(--transition-base);
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    app-region: no-drag;
+    -webkit-app-region: no-drag;
+}
+
+.debug-button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.debug-button:active {
+    transform: translateY(0);
+}
+
+.debug-button svg {
+    width: 16px;
+    height: 16px;
+}
+
 .sidebar {
     width: 200px;
     padding: var(--spacing-lg);

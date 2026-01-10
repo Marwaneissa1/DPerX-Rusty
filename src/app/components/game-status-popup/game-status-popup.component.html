@@ -1,0 +1,60 @@
+<div class="game-status-popup glass-strong">
+    <div class="popup-header">
+        <h3>Game Status</h3>
+        <button class="close-btn" (click)="close()" type="button">
+            <svg width="16" height="16" viewBox="0 0 12 12">
+                <path d="M0 0L12 12M12 0L0 12" stroke="currentColor" stroke-width="1.5" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="popup-content">
+        @if (error) {
+            <div class="error-message">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                        fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clip-rule="evenodd"
+                    />
+                </svg>
+                <span>{{ error }}</span>
+            </div>
+        }
+
+        @if (gameStatus) {
+            <div class="status-grid">
+                <div class="status-item">
+                    <span class="status-label">Local Player ID</span>
+                    <span class="status-value">{{ gameStatus.local_player_id }}</span>
+                </div>
+
+                <div class="status-item">
+                    <span class="status-label">Online Players</span>
+                    <span class="status-value">{{ gameStatus.online_players }}</span>
+                </div>
+
+                <div class="status-item">
+                    <span class="status-label">Player Position</span>
+                    <span class="status-value"
+                        >X: {{ gameStatus.player_pos.x.toFixed(2) }}, Y: {{ gameStatus.player_pos.y.toFixed(2) }}</span
+                    >
+                </div>
+
+                <div class="status-item">
+                    <span class="status-label">Aim Screen</span>
+                    <span class="status-value"
+                        >X: {{ gameStatus.aim_screen.x.toFixed(2) }}, Y: {{ gameStatus.aim_screen.y.toFixed(2) }}</span
+                    >
+                </div>
+
+                <div class="status-item">
+                    <span class="status-label">Aim World</span>
+                    <span class="status-value"
+                        >X: {{ gameStatus.aim_world.x.toFixed(2) }}, Y: {{ gameStatus.aim_world.y.toFixed(2) }}</span
+                    >
+                </div>
+            </div>
+        }
+    </div>
+</div>
