@@ -7,16 +7,23 @@ pub struct Coords {
     pub y: f32,
 }
 
+#[derive(Clone, Copy, Default, serde::Serialize)]
+pub struct Player {
+    pub id: i32,
+    pub gametick: i64,
+    pub pos: Coords,
+}
+
 pub struct CheatCore {
     process: Process,
     client_ptr: usize,
     server_ptr: usize,
-    world_ptr: usize,
     local_player_id: i32,
     online_players: i32,
     aim_screen: Coords,
     aim_world: Coords,
     player_pos: Coords,
+    players: Vec<Player>,
 }
 
 impl CheatCore {
@@ -53,30 +60,27 @@ impl CheatCore {
             process,
             client_ptr,
             server_ptr,
-            world_ptr: 0,
             local_player_id: 0,
             online_players: 0,
             aim_screen: Coords { x: 0.0, y: 0.0 },
             aim_world: Coords { x: 0.0, y: 0.0 },
             player_pos: Coords { x: 0.0, y: 0.0 },
+            players: Vec::new(),
         }
     }
 
     pub fn update(&mut self) {
-        for &offset in &OFFSETS.server_offsets.world_ptr_chain {
-            self.server_ptr = match self.process.read::<usize>(self.server_ptr + offset) {
-                Ok(addr) => addr,
-                Err(e) => {
-                    eprintln!("Error following pointer chain at offset 0x{:X}: {}", offset, e);
-                    return;
-                }
-            };
-        }
+        // for &offset in &OFFSETS.server_offsets.world_ptr_chain {
+        //     self.server_ptr = match self.process.read::<usize>(self.server_ptr + offset) {
+        //         Ok(addr) => addr,
+        //         Err(e) => {
+        //             eprintln!("Error following pointer chain at offset 0x{:X}: {}", offset, e);
+        //             return;
+        //         }
+        //     };
+        // }
 
-
-        self.local_player_id = match self
-            .process
-            .read::<i32>(self.server_ptr + OFFSETS.server_offsets.local_player_id)
+        self.local_player_id = match self.process.read::<i32>(self.server_ptr + OFFSETS.server_offsets.local_player_id)
         {
             Ok(id) => id,
             Err(e) => {
@@ -85,9 +89,7 @@ impl CheatCore {
             }
         };
 
-        self.online_players = match self
-            .process
-            .read::<i32>(self.server_ptr + OFFSETS.server_offsets.online_players)
+        self.online_players = match self.process.read::<i32>(self.server_ptr + OFFSETS.server_offsets.online_players)
         {
             Ok(v) => v,
             Err(e) => {
@@ -96,9 +98,7 @@ impl CheatCore {
             }
         };
 
-        self.aim_screen.x = match self
-            .process
-            .read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.x())
+        self.aim_screen.x = match self.process.read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.x())
         {
             Ok(v) => v,
             Err(e) => {
@@ -107,9 +107,7 @@ impl CheatCore {
             }
         };
 
-        self.aim_screen.y = match self
-            .process
-            .read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.y())
+        self.aim_screen.y = match self.process.read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.y())
         {
             Ok(v) => v,
             Err(e) => {
@@ -118,9 +116,7 @@ impl CheatCore {
             }
         };
 
-        self.aim_world.x = match self
-            .process
-            .read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_world.x())
+        self.aim_world.x = match self.process.read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_world.x())
         {
             Ok(v) => v,
             Err(e) => {
@@ -129,9 +125,7 @@ impl CheatCore {
             }
         };
 
-        self.aim_world.y = match self
-            .process
-            .read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_world.y())
+        self.aim_world.y = match self.process.read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_world.y())
         {
             Ok(v) => v,
             Err(e) => {
@@ -140,8 +134,34 @@ impl CheatCore {
             }
         };
 
-        // let _ = self.process.write(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.x(), &0i32);
-        // let _ = self.process.write(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.y(), &0i32);
+        // get players in server
+        self.players.clear();
+        for i in 0..64 {
+            let offset = i * 0xF8;
+
+            let gametick = match self.process.read::<i64>(self.server_ptr + OFFSETS.server_offsets.player_gametick + offset) {
+                Ok(p) => p,
+                Err(e) => {
+                    eprintln!("Error reading player ptr: {}", e);
+                    return;
+                }
+            };
+
+            let pos = match self.process.read::<Coords>(self.server_ptr + OFFSETS.server_offsets.player_pos + offset) {
+                Ok(pos) => pos,
+                Err(e) => {
+                    eprintln!("Error reading player pos: {}", e);
+                    return;
+                }
+            };
+
+            self.players.push(Player { id: i as i32, gametick, pos });
+        }
+
+        self.player_pos = match self.players.get(self.local_player_id as usize) {
+            Some(player) => player.pos,
+            None => Coords { x: 0.0, y: 0.0 },
+        };
     }
 
     pub fn get_local_player_id(&self) -> i32 {

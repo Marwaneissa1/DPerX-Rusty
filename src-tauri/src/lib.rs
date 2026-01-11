@@ -63,6 +63,32 @@ fn attach() -> Result<String, String> {
 }
 
 #[tauri::command]
+fn unattach() -> Result<String, String> {
+    let global = GLOBAL_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let mut state = state_arc.lock();
+        state.is_attached = false;
+        state.cheat_core = None;
+        Ok("Successfully unattached from process".to_string())
+    } else {
+        Err("Not currently attached".to_string())
+    }
+}
+
+#[tauri::command]
+fn get_attach_status() -> Result<bool, String> {
+    let global = GLOBAL_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let state = state_arc.lock();
+        Ok(state.is_attached)
+    } else {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
 fn get_game_status() -> Result<GameStatus, String> {
     let global = GLOBAL_STATE.read();
 
@@ -84,8 +110,6 @@ fn get_game_status() -> Result<GameStatus, String> {
     } else {
         return Err("Global state is None".to_string());
     }
-
-    Err("Not attached to process".to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -93,7 +117,12 @@ fn get_game_status() -> Result<GameStatus, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![attach, get_game_status])
+        .invoke_handler(tauri::generate_handler![
+            attach,
+            unattach,
+            get_attach_status,
+            get_game_status
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
