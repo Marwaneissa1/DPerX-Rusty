@@ -1,15 +1,13 @@
 export interface AimbotConfig {
     enabled: boolean;
     fov: number;
-    silent: boolean;
-    hookVisible: boolean;
     edgeScan: boolean;
     maxDistance: number;
-    alwaysActive?: boolean;
-    predictionEnabled?: boolean;
-    predictionTime?: number;
-    targetPriority?: string;
-    ignoreFrozen?: boolean;
+    alwaysActive: boolean;
+    predictionEnabled: boolean;
+    predictionTime: number;
+    ignoreFrozen: boolean;
+    autofire: boolean;
 }
 
 export interface AimbotStatus {

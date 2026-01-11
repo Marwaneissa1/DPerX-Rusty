@@ -13,15 +13,13 @@ export class AimbotService {
     async setConfig(config: Partial<AimbotConfig>): Promise<string> {
         return await invoke<string>("set_aimbot_config", {
             fov: config.fov,
-            silent: config.silent,
-            hookVisible: config.hookVisible,
             edgeScan: config.edgeScan,
             maxDistance: config.maxDistance,
             alwaysActive: config.alwaysActive,
             predictionEnabled: config.predictionEnabled,
             predictionTime: config.predictionTime,
-            targetPriority: config.targetPriority,
             ignoreFrozen: config.ignoreFrozen,
+            autofire: config.autofire,
         });
     }
 

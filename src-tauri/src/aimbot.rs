@@ -18,6 +18,7 @@ pub struct AimbotConfig {
     pub prediction_time: f32,
     pub target_priority: String,
     pub ignore_frozen: bool,
+    pub autofire: bool,
 }
 
 impl Default for AimbotConfig {
@@ -34,6 +35,7 @@ impl Default for AimbotConfig {
             prediction_time: 50.0,
             target_priority: "Closest".to_string(),
             ignore_frozen: true,
+            autofire: false,
         }
     }
 }
@@ -92,7 +94,7 @@ impl Aimbot {
         local_vel: Coords,
         mouse_pos: Coords,
     ) -> Option<Coords> {
-        let config = self.config.lock().clone();
+        let config: AimbotConfig = self.config.lock().clone();
 
         if !config.enabled {
             self.target_id = -1;
@@ -143,7 +145,12 @@ impl Aimbot {
         let mut closest_id = -1;
         let mut min_distance = config.max_distance;
 
-        for player in players {
+        let mut filtered_players = players.to_vec();
+        if config.ignore_frozen {
+            filtered_players.retain(|p| !p.frozen);
+        }
+
+        for player in filtered_players {
             if player.id == local_id {
                 continue;
             }

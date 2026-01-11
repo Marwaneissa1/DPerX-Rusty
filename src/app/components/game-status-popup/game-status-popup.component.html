@@ -64,23 +64,29 @@
                                 <div class="player-details">
                                     <div class="detail-row">
                                         <span class="detail-label">ID:</span>
-                                        <span class="detail-value">{{ player.id }}</span>
+                                        <span class="detail-value">{{ player?.id ?? "N/A" }}</span>
                                     </div>
                                     <div class="detail-row">
                                         <span class="detail-label">Gametick:</span>
-                                        <span class="detail-value">{{ player.gametick }}</span>
+                                        <span class="detail-value">{{ player?.gametick ?? "N/A" }}</span>
                                     </div>
                                     <div class="detail-row">
                                         <span class="detail-label">Position:</span>
                                         <span class="detail-value"
-                                            >X: {{ player.pos.x.toFixed(2) }}, Y: {{ player.pos.y.toFixed(2) }}</span
+                                            >X: {{ player?.pos?.x?.toFixed(2) ?? "0.00" }}, Y:
+                                            {{ player?.pos?.y?.toFixed(2) ?? "0.00" }}</span
                                         >
                                     </div>
                                     <div class="detail-row">
                                         <span class="detail-label">Velocity:</span>
                                         <span class="detail-value"
-                                            >X: {{ player.vel.x.toFixed(2) }}, Y: {{ player.vel.y.toFixed(2) }}</span
+                                            >X: {{ player?.vel?.x?.toFixed(2) ?? "0.00" }}, Y:
+                                            {{ player?.vel?.y?.toFixed(2) ?? "0.00" }}</span
                                         >
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Frozen:</span>
+                                        <span class="detail-value">{{ player?.frozen ?? false }}</span>
                                     </div>
                                 </div>
                             }

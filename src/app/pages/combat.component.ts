@@ -84,9 +84,7 @@ export class CombatComponent implements OnInit {
                     response = await this.aimbotService.setEnabled(event.value);
                     break;
                 case "alwaysActive":
-                    console.log("Setting alwaysActive to:", event.value);
                     response = await this.aimbotService.setConfig({ alwaysActive: event.value });
-                    console.log("Response:", response);
                     break;
                 case "aimbotKey":
                     response = await this.aimbotService.registerTriggerKey(event.value);
@@ -103,15 +101,12 @@ export class CombatComponent implements OnInit {
                 case "predictionTime":
                     response = await this.aimbotService.setConfig({ predictionTime: event.value });
                     break;
-                case "targetPriority":
-                    response = await this.aimbotService.setConfig({ targetPriority: event.value });
-                    break;
                 case "ignoreFrozen":
                     response = await this.aimbotService.setConfig({ ignoreFrozen: event.value });
                     break;
-                // case "autoFire":
-                //     await this.aimbotService.setConfig({ autoFire: event.value });
-                //     break;
+                case "autoFire":
+                    response = await this.aimbotService.setConfig({ autofire: event.value });
+                    break;
             }
         } catch (error) {
             console.error("Failed to update aimbot config:", error);

@@ -40,6 +40,7 @@ struct PlayerInfo {
     gametick: i64,
     pos: Coords,
     vel: Coords,
+    frozen: bool,
 }
 
 #[tauri::command]
@@ -94,8 +95,15 @@ fn attach() -> Result<String, String> {
                     }
                 };
 
+                let config = state.aimbot.get_config().lock().clone();
+
+                if config.autofire {
+                    if let Some(ref core) = state.cheat_core {
+                        let _ = core.shoot();
+                    }
+                }
+
                 if should_update {
-                    let config = state.aimbot.get_config().lock().clone();
 
                     let should_aim = config.always_active || InputHook::is_trigger_key_pressed();
 
@@ -191,6 +199,7 @@ fn get_game_status() -> Result<GameStatus, String> {
                     gametick: p.gametick,
                     pos: p.pos,
                     vel: p.vel,
+                    frozen: p.frozen,
                 })
                 .collect();
 
@@ -238,6 +247,7 @@ fn set_aimbot_config(
     prediction_time: Option<f32>,
     target_priority: Option<String>,
     ignore_frozen: Option<bool>,
+    autofire: Option<bool>,
 ) -> Result<String, String> {
     let global = GLOBAL_STATE.read();
 
@@ -275,6 +285,9 @@ fn set_aimbot_config(
         }
         if let Some(ignore_frozen) = ignore_frozen {
             config.ignore_frozen = ignore_frozen;
+        }
+        if let Some(autofire) = autofire {
+            config.autofire = autofire;
         }
 
         Ok("Aimbot config updated".to_string())
