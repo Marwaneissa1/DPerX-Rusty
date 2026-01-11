@@ -2,32 +2,29 @@ import { Component, ViewContainerRef, ComponentRef, createComponent, Environment
 
 import { RouterOutlet, RouterLink } from "@angular/router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { invoke } from "@tauri-apps/api/core";
 import { GameStatusPopupComponent } from "./components/game-status-popup/game-status-popup.component";
+import { AttachStateService } from "./_services/attach-state.service";
+import { AttachSplashComponent } from "./components/attach-splash/attach-splash.component";
 
 @Component({
     selector: "app-root",
     standalone: true,
-    imports: [RouterOutlet, RouterLink, GameStatusPopupComponent],
+    imports: [RouterOutlet, RouterLink, GameStatusPopupComponent, AttachSplashComponent],
     templateUrl: "./app.component.html",
     styleUrl: "./app.component.css",
 })
 export class AppComponent implements OnInit {
     currentRoute = "combat";
     viewStatus = false;
-    isAttached = false;
+
+    constructor(public attachStateService: AttachStateService) {}
 
     async ngOnInit() {
-        await this.checkAttachStatus();
+        await this.attachStateService.checkAttachStatus();
     }
 
-    async checkAttachStatus() {
-        try {
-            this.isAttached = await invoke<boolean>("get_attach_status");
-        } catch (error) {
-            console.error("Failed to get attach status:", error);
-            this.isAttached = false;
-        }
+    get isAttached(): boolean {
+        return this.attachStateService.isAttached;
     }
 
     async minimizeWindow() {
@@ -40,17 +37,8 @@ export class AppComponent implements OnInit {
 
     async attachToProcess() {
         try {
-            if (this.isAttached) {
-                // Unattach
-                await invoke("unattach");
-                this.isAttached = false;
-                console.log("Successfully unattached from process");
-            } else {
-                // Attach
-                await invoke("attach");
-                this.isAttached = true;
-                console.log("Successfully attached to process");
-            }
+            await this.attachStateService.toggleAttach();
+            console.log(this.isAttached ? "Successfully attached to process" : "Successfully unattached from process");
         } catch (error) {
             console.error("Failed to toggle attach:", error);
         }

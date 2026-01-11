@@ -1,8 +1,8 @@
-<div class="popup-backdrop" (click)="close()"></div>
+<div class="popup-backdrop" (click)="onClose()"></div>
 <div class="game-status-popup glass-strong" (click)="$event.stopPropagation()">
     <div class="popup-header">
         <h3>Game Status</h3>
-        <button class="close-btn" (click)="close()" type="button">
+        <button class="close-btn" (click)="onClose()" type="button">
             <svg width="16" height="16" viewBox="0 0 12 12">
                 <path d="M0 0L12 12M12 0L0 12" stroke="currentColor" stroke-width="1.5" />
             </svg>
@@ -10,19 +10,6 @@
     </div>
 
     <div class="popup-content">
-        @if (error) {
-            <div class="error-message">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                    <path
-                        fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clip-rule="evenodd"
-                    />
-                </svg>
-                <span>{{ error }}</span>
-            </div>
-        }
-
         @if (gameStatus) {
             <div class="status-grid">
                 <div class="status-item">
@@ -56,18 +43,53 @@
                     >
                 </div>
             </div>
-        }
 
-        <!-- Debug Controls -->
-        <div class="debug-controls">
-            <h4>Overlay Debug</h4>
-            <div class="debug-buttons">
-                <button class="debug-btn" (click)="debugStartOverlay()" type="button">Start Overlay</button>
-                <button class="debug-btn" (click)="debugDrawLine()" type="button">Draw Line</button>
-                <button class="debug-btn" (click)="debugDrawCircle()" type="button">Draw Circle</button>
-                <button class="debug-btn" (click)="debugClearOverlay()" type="button">Clear</button>
-                <button class="debug-btn primary" (click)="debugRunDemo()" type="button">Run Demo</button>
+            <div class="players-section">
+                <h3>Players ({{ gameStatus.players?.length || 0 }})</h3>
+                <div class="players-list">
+                    @for (player of gameStatus.players; track player.id) {
+                        <div
+                            class="player-item"
+                            [class.expanded]="isPlayerExpanded(player.id)"
+                            [class.local-player]="player.id === gameStatus.local_player_id"
+                        >
+                            <div class="player-header" (click)="togglePlayer(player.id)">
+                                <span class="player-id">Player {{ player.id }}</span>
+                                @if (player.id === gameStatus.local_player_id) {
+                                    <span class="local-badge">YOU</span>
+                                }
+                                <span class="expand-icon">{{ isPlayerExpanded(player.id) ? "▼" : "▶" }}</span>
+                            </div>
+                            @if (isPlayerExpanded(player.id)) {
+                                <div class="player-details">
+                                    <div class="detail-row">
+                                        <span class="detail-label">ID:</span>
+                                        <span class="detail-value">{{ player.id }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Gametick:</span>
+                                        <span class="detail-value">{{ player.gametick }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Position:</span>
+                                        <span class="detail-value"
+                                            >X: {{ player.pos.x.toFixed(2) }}, Y: {{ player.pos.y.toFixed(2) }}</span
+                                        >
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Velocity:</span>
+                                        <span class="detail-value"
+                                            >X: {{ player.vel.x.toFixed(2) }}, Y: {{ player.vel.y.toFixed(2) }}</span
+                                        >
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
+        } @else {
+            <div class="loading">Loading game status...</div>
+        }
     </div>
 </div>

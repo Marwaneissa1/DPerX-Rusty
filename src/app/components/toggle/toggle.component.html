@@ -1,4 +1,8 @@
-<label class="checkbox-container" (click)="onToggle()">
-    <input type="checkbox" [checked]="value" class="option-checkbox" />
+<label
+    class="checkbox-container"
+    [class.disabled]="disabled"
+    (click)="onToggle(); $event.preventDefault(); $event.stopPropagation()"
+>
+    <input type="checkbox" [checked]="value" class="option-checkbox" readonly [disabled]="disabled" />
     <span class="checkbox-custom"></span>
 </label>

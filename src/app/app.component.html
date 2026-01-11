@@ -1,3 +1,7 @@
+@if (!attachStateService.isAttached) {
+    <app-attach-splash></app-attach-splash>
+}
+
 @if (viewStatus) {
     <app-game-status-popup (closePopup)="toggleGameStatus()"></app-game-status-popup>
 }

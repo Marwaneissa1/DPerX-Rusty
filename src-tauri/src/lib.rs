@@ -1,11 +1,13 @@
+mod aimbot;
 mod cheat_core;
-mod overlay;
+mod input_hook;
 
-mod game_structure;
 mod ioprocesses;
+mod offsets;
 
+use aimbot::{Aimbot, AimbotStatus};
 use cheat_core::{CheatCore, Coords};
-use overlay::{DrawCircle, DrawLine, OverlayState};
+use input_hook::{vk_code_from_string, InputHook};
 use parking_lot::{Mutex, RwLock};
 use std::sync::Arc;
 use std::thread;
@@ -13,6 +15,7 @@ use std::time::Duration;
 
 struct AppState {
     cheat_core: Option<CheatCore>,
+    aimbot: Aimbot,
     is_attached: bool,
 }
 
@@ -20,7 +23,6 @@ unsafe impl Send for AppState {}
 unsafe impl Sync for AppState {}
 
 static GLOBAL_STATE: RwLock<Option<Arc<Mutex<AppState>>>> = RwLock::new(None);
-static OVERLAY_STATE: RwLock<Option<Arc<Mutex<OverlayState>>>> = RwLock::new(None);
 
 #[derive(serde::Serialize, Clone)]
 struct GameStatus {
@@ -29,6 +31,15 @@ struct GameStatus {
     player_pos: Coords,
     aim_screen: Coords,
     aim_world: Coords,
+    players: Vec<PlayerInfo>,
+}
+
+#[derive(serde::Serialize, Clone)]
+struct PlayerInfo {
+    id: i32,
+    gametick: i64,
+    pos: Coords,
+    vel: Coords,
 }
 
 #[tauri::command]
@@ -38,20 +49,63 @@ fn attach() -> Result<String, String> {
     if global.is_none() {
         let state = Arc::new(Mutex::new(AppState {
             cheat_core: None,
+            aimbot: Aimbot::new(),
             is_attached: false,
         }));
         *global = Some(state.clone());
 
         thread::spawn(move || loop {
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(1));
 
             let mut state = state.lock();
             if state.is_attached {
-                if let Some(ref mut core) = state.cheat_core {
-                    if let Err(e) = core.update() {
-                        eprintln!("Memory read failed, auto-detaching: {}", e);
-                        state.is_attached = false;
-                        state.cheat_core = None;
+                let (local_id, players, local_pos, local_vel, mouse_pos, should_update) = {
+                    if let Some(ref mut core) = state.cheat_core {
+                        if let Err(e) = core.update() {
+                            eprintln!("Memory read failed, auto-detaching: {}", e);
+                            state.is_attached = false;
+                            state.cheat_core = None;
+                            (
+                                0,
+                                Vec::new(),
+                                Coords::default(),
+                                Coords::default(),
+                                Coords::default(),
+                                false,
+                            )
+                        } else {
+                            let local_id = core.get_local_player_id();
+                            let players = core.get_players().to_vec();
+                            let local_pos = core.get_player_pos();
+                            let local_vel = core.get_local_velocity();
+                            let mouse_pos = core.get_aim_screen();
+                            let should_update = state.aimbot.get_config().lock().enabled;
+                            (local_id, players, local_pos, local_vel, mouse_pos, should_update)
+                        }
+                    } else {
+                        (
+                            0,
+                            Vec::new(),
+                            Coords::default(),
+                            Coords::default(),
+                            Coords::default(),
+                            false,
+                        )
+                    }
+                };
+
+                if should_update {
+                    let config = state.aimbot.get_config().lock().clone();
+
+                    let should_aim = config.always_active || InputHook::is_trigger_key_pressed();
+
+                    if should_aim {
+                        if let Some(aim_pos) = state.aimbot.update(local_id, &players, local_pos, local_vel, mouse_pos)
+                        {
+                            if let Some(ref core) = state.cheat_core {
+                                let _ = core.write_aim_position(aim_pos);
+                            }
+                        }
                     }
                 }
             }
@@ -95,6 +149,31 @@ fn get_attach_status() -> Result<bool, String> {
     }
 }
 
+#[derive(serde::Serialize)]
+struct GameProcessStatus {
+    process_found: bool,
+    window_found: bool,
+    process_name: String,
+}
+
+#[tauri::command]
+fn get_game_process_status() -> Result<GameProcessStatus, String> {
+    use ioprocesses::Process;
+
+    let process_found = Process::from_process_name("ddnet.exe").is_ok();
+    let window_found = if process_found {
+        Process::from_window_title("DDNet").is_ok()
+    } else {
+        false
+    };
+
+    Ok(GameProcessStatus {
+        process_found,
+        window_found,
+        process_name: "DDNet".to_string(),
+    })
+}
+
 #[tauri::command]
 fn get_game_status() -> Result<GameStatus, String> {
     let global = GLOBAL_STATE.read();
@@ -103,12 +182,25 @@ fn get_game_status() -> Result<GameStatus, String> {
         let state = state_arc.lock();
 
         if let Some(ref core) = state.cheat_core {
+            let players_data = core.get_players();
+            let players_info: Vec<PlayerInfo> = players_data
+                .iter()
+                .filter(|p| p.gametick > 0)
+                .map(|p| PlayerInfo {
+                    id: p.id,
+                    gametick: p.gametick,
+                    pos: p.pos,
+                    vel: p.vel,
+                })
+                .collect();
+
             let status = GameStatus {
                 local_player_id: core.get_local_player_id(),
                 online_players: core.get_online_players(),
                 player_pos: core.get_player_pos(),
                 aim_screen: core.get_aim_screen(),
                 aim_world: core.get_aim_world(),
+                players: players_info,
             };
             return Ok(status);
         } else {
@@ -120,87 +212,103 @@ fn get_game_status() -> Result<GameStatus, String> {
 }
 
 #[tauri::command]
-fn start_overlay() -> Result<String, String> {
-    let mut global = OVERLAY_STATE.write();
+fn set_aimbot_enabled(enabled: bool) -> Result<String, String> {
+    let global = GLOBAL_STATE.read();
 
-    if global.is_none() {
-        let state = Arc::new(Mutex::new(OverlayState::default()));
-        *global = Some(state);
-        Ok("Overlay initialized".to_string())
+    if let Some(state_arc) = global.as_ref() {
+        let mut state = state_arc.lock();
+        let mut config = state.aimbot.get_config().lock().clone();
+        config.enabled = enabled;
+        state.aimbot.set_config(config);
+        Ok(format!("Aimbot {}", if enabled { "enabled" } else { "disabled" }))
     } else {
-        Ok("Overlay already initialized".to_string())
+        Err("Not currently attached".to_string())
     }
 }
 
 #[tauri::command]
-fn get_overlay_state() -> Result<OverlayState, String> {
-    let global = OVERLAY_STATE.read();
+fn set_aimbot_config(
+    fov: Option<f32>,
+    silent: Option<bool>,
+    hook_visible: Option<bool>,
+    edge_scan: Option<bool>,
+    max_distance: Option<f32>,
+    always_active: Option<bool>,
+    prediction_enabled: Option<bool>,
+    prediction_time: Option<f32>,
+    target_priority: Option<String>,
+    ignore_frozen: Option<bool>,
+) -> Result<String, String> {
+    let global = GLOBAL_STATE.read();
 
     if let Some(state_arc) = global.as_ref() {
         let state = state_arc.lock();
-        Ok(state.clone())
+        let config_arc = state.aimbot.get_config();
+        let mut config = config_arc.lock();
+
+        if let Some(fov) = fov {
+            config.fov = fov;
+        }
+        if let Some(silent) = silent {
+            config.silent = silent;
+        }
+        if let Some(hook_visible) = hook_visible {
+            config.hook_visible = hook_visible;
+        }
+        if let Some(edge_scan) = edge_scan {
+            config.edge_scan = edge_scan;
+        }
+        if let Some(max_distance) = max_distance {
+            config.max_distance = max_distance;
+        }
+        if let Some(always_active) = always_active {
+            config.always_active = always_active;
+        }
+        if let Some(prediction_enabled) = prediction_enabled {
+            config.prediction_enabled = prediction_enabled;
+        }
+        if let Some(prediction_time) = prediction_time {
+            config.prediction_time = prediction_time;
+        }
+        if let Some(target_priority) = target_priority {
+            config.target_priority = target_priority;
+        }
+        if let Some(ignore_frozen) = ignore_frozen {
+            config.ignore_frozen = ignore_frozen;
+        }
+
+        Ok("Aimbot config updated".to_string())
     } else {
-        Err("Overlay not initialized".to_string())
+        Err("Not currently attached".to_string())
     }
 }
 
 #[tauri::command]
-fn get_window_rect() -> Result<ioprocesses::WindowRect, String> {
-    ioprocesses::get_window_rect_by_process_name("ddnet.exe")
-}
-
-#[tauri::command]
-fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, color: [u8; 4], thickness: f32) -> Result<String, String> {
-    let global = OVERLAY_STATE.read();
+fn get_aimbot_status() -> Result<AimbotStatus, String> {
+    let global = GLOBAL_STATE.read();
 
     if let Some(state_arc) = global.as_ref() {
-        let mut state = state_arc.lock();
-        state.lines.push(DrawLine {
-            x1,
-            y1,
-            x2,
-            y2,
-            color,
-            thickness,
-        });
-        Ok("Line added".to_string())
+        let state = state_arc.lock();
+        Ok(state.aimbot.get_status())
     } else {
-        Err("Overlay not started".to_string())
+        Err("Not currently attached".to_string())
     }
 }
 
 #[tauri::command]
-fn draw_circle(x: f32, y: f32, radius: f32, color: [u8; 4], filled: bool, thickness: f32) -> Result<String, String> {
-    let global = OVERLAY_STATE.read();
-
-    if let Some(state_arc) = global.as_ref() {
-        let mut state = state_arc.lock();
-        state.circles.push(DrawCircle {
-            x,
-            y,
-            radius,
-            color,
-            filled,
-            thickness,
-        });
-        Ok("Circle added".to_string())
+fn register_trigger_key(key: String) -> Result<String, String> {
+    if let Some(vk_code) = vk_code_from_string(&key) {
+        InputHook::register_trigger_key(vk_code)?;
+        Ok(format!("Trigger key '{}' registered", key))
     } else {
-        Err("Overlay not started".to_string())
+        Err(format!("Invalid key: {}", key))
     }
 }
 
 #[tauri::command]
-fn clear_overlay() -> Result<String, String> {
-    let global = OVERLAY_STATE.read();
-
-    if let Some(state_arc) = global.as_ref() {
-        let mut state = state_arc.lock();
-        state.lines.clear();
-        state.circles.clear();
-        Ok("Overlay cleared".to_string())
-    } else {
-        Err("Overlay not started".to_string())
-    }
+fn unregister_trigger_key() -> Result<String, String> {
+    InputHook::unregister_trigger_key()?;
+    Ok("Trigger key unregistered".to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -212,13 +320,13 @@ pub fn run() {
             attach,
             unattach,
             get_attach_status,
+            get_game_process_status,
             get_game_status,
-            start_overlay,
-            get_overlay_state,
-            get_window_rect,
-            draw_line,
-            draw_circle,
-            clear_overlay
+            set_aimbot_enabled,
+            set_aimbot_config,
+            get_aimbot_status,
+            register_trigger_key,
+            unregister_trigger_key,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

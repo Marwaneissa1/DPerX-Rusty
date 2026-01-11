@@ -6,7 +6,7 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
 };
 use windows::Win32::System::Threading::{OpenProcess, PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE};
 use windows::Win32::UI::WindowsAndMessaging::{
-    EnumWindows, FindWindowW, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId,
+    EnumWindows, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId,
 };
 
 pub struct Process {
@@ -317,6 +317,7 @@ pub struct WindowRect {
     pub height: i32,
 }
 
+#[allow(dead_code)]
 pub fn get_window_rect_by_process_name(process_name: &str) -> Result<WindowRect, String> {
     let pid = find_pid_by_process_name(process_name)?;
 

@@ -1,5 +1,5 @@
 @if (field.type === "group") {
-    <div class="option-group">
+    <div class="option-group" [class.disabled]="field.disabled">
         <div class="group-header" (click)="toggleGroup()">
             <svg
                 class="group-icon"
@@ -18,25 +18,33 @@
         @if (field.expanded && field.children) {
             <div class="group-children">
                 @for (child of field.children; track child.id) {
-                    <app-option-item [field]="child"></app-option-item>
+                    <app-option-item [field]="child" (valueChange)="onChildValueChange($event)"></app-option-item>
                 }
             </div>
         }
     </div>
 } @else {
-    <div class="option-item">
+    <div class="option-item" [class.disabled]="field.disabled">
         <label class="option-label">{{ field.label }}</label>
 
         @if (field.type === "text") {
-            <app-text-input [(ngModel)]="field.value"></app-text-input>
+            <app-text-input [(ngModel)]="field.value" [disabled]="field.disabled ?? false"></app-text-input>
         }
 
         @if (field.type === "integer") {
-            <app-number-input [(ngModel)]="field.value" [step]="1"></app-number-input>
+            <app-number-input
+                [(ngModel)]="field.value"
+                [step]="1"
+                [disabled]="field.disabled ?? false"
+            ></app-number-input>
         }
 
         @if (field.type === "float") {
-            <app-number-input [(ngModel)]="field.value" [step]="0.01"></app-number-input>
+            <app-number-input
+                [(ngModel)]="field.value"
+                [step]="0.01"
+                [disabled]="field.disabled ?? false"
+            ></app-number-input>
         }
 
         @if (field.type === "slider") {
@@ -45,15 +53,16 @@
                 [min]="field.min || 0"
                 [max]="field.max || 100"
                 [step]="field.step || 1"
+                [disabled]="field.disabled ?? false"
             ></app-slider>
         }
 
         @if (field.type === "checkbox") {
-            <app-toggle [(ngModel)]="field.value"></app-toggle>
+            <app-toggle [(ngModel)]="field.value" [disabled]="field.disabled ?? false"></app-toggle>
         }
 
         @if (field.type === "key") {
-            <app-key-picker [(ngModel)]="field.value"></app-key-picker>
+            <app-key-picker [(ngModel)]="field.value" [disabled]="field.disabled ?? false"></app-key-picker>
         }
     </div>
 }

@@ -1,7 +1,7 @@
-use crate::game_structure::OFFSETS;
 use crate::ioprocesses::Process;
+use crate::offsets::OFFSETS;
 
-#[derive(Clone, Copy, Default, serde::Serialize)]
+#[derive(Clone, Copy, Default, serde::Serialize, Debug)]
 pub struct Coords {
     pub x: f32,
     pub y: f32,
@@ -12,6 +12,7 @@ pub struct Player {
     pub id: i32,
     pub gametick: i64,
     pub pos: Coords,
+    pub vel: Coords,
 }
 
 pub struct CheatCore {
@@ -23,6 +24,7 @@ pub struct CheatCore {
     aim_screen: Coords,
     aim_world: Coords,
     player_pos: Coords,
+    player_vel: Coords,
     players: Vec<Player>,
 }
 
@@ -65,6 +67,7 @@ impl CheatCore {
             aim_screen: Coords { x: 0.0, y: 0.0 },
             aim_world: Coords { x: 0.0, y: 0.0 },
             player_pos: Coords { x: 0.0, y: 0.0 },
+            player_vel: Coords { x: 0.0, y: 0.0 },
             players: Vec::new(),
         }
     }
@@ -155,17 +158,33 @@ impl CheatCore {
                 }
             };
 
+            let vel = match self
+                .process
+                .read::<Coords>(self.server_ptr + OFFSETS.server_offsets.player_vel + offset)
+            {
+                Ok(vel) => vel,
+                Err(e) => {
+                    return Err(format!("Error reading player vel: {}", e));
+                }
+            };
+
             self.players.push(Player {
                 id: i as i32,
                 gametick,
                 pos,
+                vel,
             });
         }
 
-        self.player_pos = match self.players.get(self.local_player_id as usize) {
-            Some(player) => player.pos,
-            None => Coords { x: 0.0, y: 0.0 },
+        let local_player: Result<&Player, String> = match self.players.get(self.local_player_id as usize) {
+            Some(player) => Ok(player),
+            None => Err("Local player not found".to_string()),
         };
+        
+        if let Ok(p) = local_player {
+            self.player_pos = p.pos;
+            self.player_vel = p.vel;
+        }
 
         Ok(())
     }
@@ -188,5 +207,25 @@ impl CheatCore {
 
     pub fn get_aim_world(&self) -> Coords {
         self.aim_world
+    }
+
+    pub fn get_players(&self) -> &[Player] {
+        &self.players
+    }
+
+    pub fn get_local_velocity(&self) -> Coords {
+        self.player_vel
+    }
+
+    pub fn write_aim_position(&self, pos: Coords) -> Result<(), String> {
+        self.process
+            .write(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.x(), &pos.x)
+            .map_err(|e| format!("Failed to write aim x: {}", e))?;
+
+        self.process
+            .write(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.y(), &pos.y)
+            .map_err(|e| format!("Failed to write aim y: {}", e))?;
+
+        Ok(())
     }
 }

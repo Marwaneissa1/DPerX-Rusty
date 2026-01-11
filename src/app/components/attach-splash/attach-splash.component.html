@@ -1,0 +1,96 @@
+<div class="splash-container">
+    <div class="splash-content">
+        <div class="logo-section">
+            <div class="logo">
+                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                    <circle cx="40" cy="40" r="35" stroke="currentColor" stroke-width="3" />
+                    <path
+                        d="M40 20 L50 35 L45 35 L45 50 L55 50 L40 65 L25 50 L35 50 L35 35 L30 35 Z"
+                        fill="currentColor"
+                    />
+                </svg>
+            </div>
+            <h1 class="app-title">DPerX Rusty</h1>
+            <p class="app-subtitle">Advanced DDNet Enhancement Suite</p>
+        </div>
+
+        <div class="status-section">
+            <div
+                class="status-card"
+                [class.status-ready]="gameStatus.process_found"
+                [class.status-waiting]="!gameStatus.process_found"
+            >
+                <div class="status-icon">{{ statusIcon }}</div>
+                <div class="status-info">
+                    <h3 class="status-title">Game Status</h3>
+                    <p class="status-message">{{ statusMessage }}</p>
+                    @if (gameStatus.process_found) {
+                        <div class="status-details">
+                            <span class="detail-item">
+                                <span class="detail-icon">🎮</span>
+                                Process: {{ gameStatus.process_name }}
+                            </span>
+                            @if (gameStatus.window_found) {
+                                <span class="detail-item">
+                                    <span class="detail-icon">🪟</span>
+                                    Window active
+                                </span>
+                            }
+                        </div>
+                    } @else {
+                        <p class="status-hint">Launch DDNet to continue</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="action-section">
+            <button
+                class="attach-button"
+                [class.disabled]="!canAttach"
+                [class.loading]="isAttaching"
+                (click)="onAttach()"
+                [disabled]="!canAttach"
+            >
+                @if (isAttaching) {
+                    <span class="spinner"></span>
+                    <span>Connecting...</span>
+                } @else if (canAttach) {
+                    <span>🔗 Connect to Game</span>
+                } @else {
+                    <span>⏳ Waiting for process...</span>
+                }
+            </button>
+
+            @if (!gameStatus.process_found) {
+                <p class="help-text">
+                    Make sure DDNet is running before connecting.
+                    <br />
+                    The application will automatically detect the process.
+                </p>
+            }
+        </div>
+
+        <div class="features-section">
+            <h3 class="features-title">Features</h3>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">🎯</span>
+                    <span class="feature-name">Advanced Aimbot</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span class="feature-name">Hook Prediction</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔍</span>
+                    <span class="feature-name">Edge Scanning</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⌨️</span>
+                    <span class="feature-name">Trigger Key</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

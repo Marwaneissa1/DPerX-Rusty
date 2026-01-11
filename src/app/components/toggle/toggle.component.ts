@@ -16,12 +16,15 @@ import { NG_VALUE_ACCESSOR, ControlValueAccessor } from "@angular/forms";
 })
 export class ToggleComponent implements ControlValueAccessor {
     @Input() value: boolean = false;
+    @Input() disabled: boolean = false;
     onChange: any = () => {};
     onTouched: any = () => {};
 
     onToggle(): void {
+        if (this.disabled) return;
         this.value = !this.value;
         this.onChange(this.value);
+        this.onTouched();
     }
 
     writeValue(value: boolean): void {
@@ -34,5 +37,9 @@ export class ToggleComponent implements ControlValueAccessor {
 
     registerOnTouched(fn: any): void {
         this.onTouched = fn;
+    }
+
+    setDisabledState(isDisabled: boolean): void {
+        this.disabled = isDisabled;
     }
 }

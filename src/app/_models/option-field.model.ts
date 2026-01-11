@@ -8,4 +8,5 @@ export interface OptionField {
     step?: number;
     children?: OptionField[];
     expanded?: boolean;
+    disabled?: boolean;
 }

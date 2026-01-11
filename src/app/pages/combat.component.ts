@@ -1,14 +1,19 @@
-import { Component } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { OptionsComponent } from "../components/options/options.component";
 import { OptionField } from "../_models/option-field.model";
+import { AimbotService } from "../_services/aimbot.service";
 
 @Component({
     selector: "app-combat",
     standalone: true,
     imports: [OptionsComponent],
-    template: '<app-options [fields]="fields"></app-options>',
+    template: '<app-options [fields]="fields" (valueChange)="onValueChange($event)"></app-options>',
 })
-export class CombatComponent {
+export class CombatComponent implements OnInit {
+    constructor(private aimbotService: AimbotService) {}
+
+    ngOnInit() {}
+
     fields: OptionField[] = [
         {
             id: "aimbot",
@@ -16,12 +21,19 @@ export class CombatComponent {
             type: "group",
             expanded: true,
             children: [
-                { id: "aimbotWeapons", label: "Aimbot Weapons", type: "checkbox", value: false },
-                { id: "aimbotHook", label: "Aimbot Hook", type: "checkbox", value: false },
+                { id: "aimbot", label: "Aimbot", type: "checkbox", value: false },
+                { id: "alwaysActive", label: "Always Active", type: "checkbox", value: false },
                 { id: "aimbotKey", label: "Aimbot Key", type: "key", value: "SHIFT" },
-                { id: "showFov", label: "Show FOV Circle", type: "checkbox", value: true },
-                { id: "weaponFov", label: "FOV Size", type: "slider", value: 90, min: 30, max: 180, step: 5 },
-                { id: "maxDistance", label: "Max Distance", type: "slider", value: 500, min: 100, max: 1000, step: 50 },
+                { id: "aimbotFov", label: "FOV Size", type: "slider", value: 90, min: 0, max: 360, step: 2 },
+                {
+                    id: "aimbotMaxDistance",
+                    label: "Max Distance",
+                    type: "slider",
+                    value: 395,
+                    min: 0,
+                    max: 2000,
+                    step: 50,
+                },
             ],
         },
         {
@@ -30,10 +42,16 @@ export class CombatComponent {
             type: "group",
             expanded: false,
             children: [
-                { id: "predictionsEnabled", label: "Enable Predictions", type: "checkbox", value: true },
-                { id: "predictionStrength", label: "Prediction Strength", type: "float", value: 1.0 },
-                { id: "predictionKey", label: "Prediction Key", type: "key", value: "CTRL" },
-                { id: "smoothing", label: "Smoothing", type: "slider", value: 50, min: 0, max: 100, step: 1 },
+                { id: "predictionEnabled", label: "Enable Prediction", type: "checkbox", value: true },
+                {
+                    id: "predictionTime",
+                    label: "Prediction Time (ms)",
+                    type: "slider",
+                    value: 50,
+                    min: 0,
+                    max: 500,
+                    step: 10,
+                },
             ],
         },
         {
@@ -41,12 +59,7 @@ export class CombatComponent {
             label: "Auto Actions",
             type: "group",
             expanded: false,
-            children: [
-                { id: "autoFire", label: "Auto Fire", type: "checkbox", value: false },
-                { id: "autoHammer", label: "Auto Hammer", type: "checkbox", value: false },
-                { id: "autoFireKey", label: "Auto Fire Key", type: "key", value: "X" },
-                { id: "reactionTime", label: "Reaction Time (ms)", type: "integer", value: 100 },
-            ],
+            children: [{ id: "autoFire", label: "Auto Fire", type: "checkbox", value: false }],
         },
         {
             id: "targeting",
@@ -55,9 +68,55 @@ export class CombatComponent {
             expanded: false,
             children: [
                 { id: "targetPriority", label: "Target Priority", type: "text", value: "Closest" },
-                { id: "ignoreTeam", label: "Ignore Team", type: "checkbox", value: true },
-                { id: "targetLock", label: "Target Lock", type: "checkbox", value: false },
+                { id: "ignoreFrozen", label: "Ignore Frozen Tees", type: "checkbox", value: true },
             ],
         },
     ];
+
+    async onValueChange(event: { id: string; value: any }) {
+        let response;
+
+        console.log("Value change:", event);
+
+        try {
+            switch (event.id) {
+                case "aimbot":
+                    response = await this.aimbotService.setEnabled(event.value);
+                    break;
+                case "alwaysActive":
+                    console.log("Setting alwaysActive to:", event.value);
+                    response = await this.aimbotService.setConfig({ alwaysActive: event.value });
+                    console.log("Response:", response);
+                    break;
+                case "aimbotKey":
+                    response = await this.aimbotService.registerTriggerKey(event.value);
+                    break;
+                case "aimbotFov":
+                    response = await this.aimbotService.setConfig({ fov: event.value });
+                    break;
+                case "aimbotMaxDistance":
+                    response = await this.aimbotService.setConfig({ maxDistance: event.value });
+                    break;
+                case "predictionEnabled":
+                    response = await this.aimbotService.setConfig({ predictionEnabled: event.value });
+                    break;
+                case "predictionTime":
+                    response = await this.aimbotService.setConfig({ predictionTime: event.value });
+                    break;
+                case "targetPriority":
+                    response = await this.aimbotService.setConfig({ targetPriority: event.value });
+                    break;
+                case "ignoreFrozen":
+                    response = await this.aimbotService.setConfig({ ignoreFrozen: event.value });
+                    break;
+                // case "autoFire":
+                //     await this.aimbotService.setConfig({ autoFire: event.value });
+                //     break;
+            }
+        } catch (error) {
+            console.error("Failed to update aimbot config:", error);
+        }
+
+        console.log(response);
+    }
 }
