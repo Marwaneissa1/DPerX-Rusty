@@ -1,9 +1,11 @@
 mod cheat_core;
+mod overlay;
 
 mod game_structure;
 mod ioprocesses;
 
 use cheat_core::{CheatCore, Coords};
+use overlay::{DrawCircle, DrawLine, OverlayState};
 use parking_lot::{Mutex, RwLock};
 use std::sync::Arc;
 use std::thread;
@@ -18,6 +20,7 @@ unsafe impl Send for AppState {}
 unsafe impl Sync for AppState {}
 
 static GLOBAL_STATE: RwLock<Option<Arc<Mutex<AppState>>>> = RwLock::new(None);
+static OVERLAY_STATE: RwLock<Option<Arc<Mutex<OverlayState>>>> = RwLock::new(None);
 
 #[derive(serde::Serialize, Clone)]
 struct GameStatus {
@@ -45,7 +48,11 @@ fn attach() -> Result<String, String> {
             let mut state = state.lock();
             if state.is_attached {
                 if let Some(ref mut core) = state.cheat_core {
-                    core.update();
+                    if let Err(e) = core.update() {
+                        eprintln!("Memory read failed, auto-detaching: {}", e);
+                        state.is_attached = false;
+                        state.cheat_core = None;
+                    }
                 }
             }
         });
@@ -112,6 +119,90 @@ fn get_game_status() -> Result<GameStatus, String> {
     }
 }
 
+#[tauri::command]
+fn start_overlay() -> Result<String, String> {
+    let mut global = OVERLAY_STATE.write();
+
+    if global.is_none() {
+        let state = Arc::new(Mutex::new(OverlayState::default()));
+        *global = Some(state);
+        Ok("Overlay initialized".to_string())
+    } else {
+        Ok("Overlay already initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn get_overlay_state() -> Result<OverlayState, String> {
+    let global = OVERLAY_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let state = state_arc.lock();
+        Ok(state.clone())
+    } else {
+        Err("Overlay not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+fn get_window_rect() -> Result<ioprocesses::WindowRect, String> {
+    ioprocesses::get_window_rect_by_process_name("ddnet.exe")
+}
+
+#[tauri::command]
+fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, color: [u8; 4], thickness: f32) -> Result<String, String> {
+    let global = OVERLAY_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let mut state = state_arc.lock();
+        state.lines.push(DrawLine {
+            x1,
+            y1,
+            x2,
+            y2,
+            color,
+            thickness,
+        });
+        Ok("Line added".to_string())
+    } else {
+        Err("Overlay not started".to_string())
+    }
+}
+
+#[tauri::command]
+fn draw_circle(x: f32, y: f32, radius: f32, color: [u8; 4], filled: bool, thickness: f32) -> Result<String, String> {
+    let global = OVERLAY_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let mut state = state_arc.lock();
+        state.circles.push(DrawCircle {
+            x,
+            y,
+            radius,
+            color,
+            filled,
+            thickness,
+        });
+        Ok("Circle added".to_string())
+    } else {
+        Err("Overlay not started".to_string())
+    }
+}
+
+#[tauri::command]
+fn clear_overlay() -> Result<String, String> {
+    let global = OVERLAY_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let mut state = state_arc.lock();
+        state.lines.clear();
+        state.circles.clear();
+        Ok("Overlay cleared".to_string())
+    } else {
+        Err("Overlay not started".to_string())
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 #[allow(unused)]
 pub fn run() {
@@ -121,7 +212,13 @@ pub fn run() {
             attach,
             unattach,
             get_attach_status,
-            get_game_status
+            get_game_status,
+            start_overlay,
+            get_overlay_state,
+            get_window_rect,
+            draw_line,
+            draw_circle,
+            clear_overlay
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,4 +1,5 @@
-<div class="game-status-popup glass-strong">
+<div class="popup-backdrop" (click)="close()"></div>
+<div class="game-status-popup glass-strong" (click)="$event.stopPropagation()">
     <div class="popup-header">
         <h3>Game Status</h3>
         <button class="close-btn" (click)="close()" type="button">
@@ -56,5 +57,17 @@
                 </div>
             </div>
         }
+
+        <!-- Debug Controls -->
+        <div class="debug-controls">
+            <h4>Overlay Debug</h4>
+            <div class="debug-buttons">
+                <button class="debug-btn" (click)="debugStartOverlay()" type="button">Start Overlay</button>
+                <button class="debug-btn" (click)="debugDrawLine()" type="button">Draw Line</button>
+                <button class="debug-btn" (click)="debugDrawCircle()" type="button">Draw Circle</button>
+                <button class="debug-btn" (click)="debugClearOverlay()" type="button">Clear</button>
+                <button class="debug-btn primary" (click)="debugRunDemo()" type="button">Run Demo</button>
+            </div>
+        </div>
     </div>
 </div>

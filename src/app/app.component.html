@@ -1,5 +1,5 @@
 @if (viewStatus) {
-    <app-game-status-popup></app-game-status-popup>
+    <app-game-status-popup (closePopup)="toggleGameStatus()"></app-game-status-popup>
 }
 
 <div class="app-layout">

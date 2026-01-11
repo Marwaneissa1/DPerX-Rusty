@@ -1,11 +1,13 @@
-use windows::Win32::Foundation::{CloseHandle, BOOL, HANDLE, HWND, LPARAM};
+use windows::Win32::Foundation::{CloseHandle, BOOL, HANDLE, HWND, LPARAM, RECT};
 use windows::Win32::System::Diagnostics::Debug::{ReadProcessMemory, WriteProcessMemory};
 use windows::Win32::System::Diagnostics::ToolHelp::{
     CreateToolhelp32Snapshot, Module32FirstW, Module32NextW, Process32FirstW, Process32NextW, MODULEENTRY32W,
     PROCESSENTRY32W, TH32CS_SNAPMODULE, TH32CS_SNAPMODULE32, TH32CS_SNAPPROCESS,
 };
 use windows::Win32::System::Threading::{OpenProcess, PROCESS_VM_OPERATION, PROCESS_VM_READ, PROCESS_VM_WRITE};
-use windows::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowTextW, GetWindowThreadProcessId};
+use windows::Win32::UI::WindowsAndMessaging::{
+    EnumWindows, FindWindowW, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId,
+};
 
 pub struct Process {
     handle: HANDLE,
@@ -305,4 +307,62 @@ fn find_pid_by_window_title(window_title: &str) -> Result<u32, String> {
 
     data.found_pid
         .ok_or_else(|| format!("Window with title '{}' not found", window_title))
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct WindowRect {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
+pub fn get_window_rect_by_process_name(process_name: &str) -> Result<WindowRect, String> {
+    let pid = find_pid_by_process_name(process_name)?;
+
+    struct EnumData {
+        target_pid: u32,
+        found_hwnd: Option<HWND>,
+    }
+
+    unsafe extern "system" fn enum_windows_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        unsafe {
+            let data = &mut *(lparam.0 as *mut EnumData);
+
+            let mut pid: u32 = 0;
+            GetWindowThreadProcessId(hwnd, Some(&mut pid));
+
+            if pid == data.target_pid {
+                data.found_hwnd = Some(hwnd);
+                return false.into();
+            }
+
+            true.into()
+        }
+    }
+
+    let mut data = EnumData {
+        target_pid: pid,
+        found_hwnd: None,
+    };
+
+    unsafe {
+        let _ = EnumWindows(Some(enum_windows_callback), LPARAM(&mut data as *mut _ as isize));
+    }
+
+    let hwnd = data
+        .found_hwnd
+        .ok_or_else(|| format!("Window for process '{}' not found", process_name))?;
+
+    unsafe {
+        let mut rect = RECT::default();
+        GetWindowRect(hwnd, &mut rect).map_err(|e| format!("Failed to get window rect: {:?}", e))?;
+
+        Ok(WindowRect {
+            x: rect.left,
+            y: rect.top,
+            width: rect.right - rect.left,
+            height: rect.bottom - rect.top,
+        })
+    }
 }

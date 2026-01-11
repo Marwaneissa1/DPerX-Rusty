@@ -69,68 +69,64 @@ impl CheatCore {
         }
     }
 
-    pub fn update(&mut self) {
-        // for &offset in &OFFSETS.server_offsets.world_ptr_chain {
-        //     self.server_ptr = match self.process.read::<usize>(self.server_ptr + offset) {
-        //         Ok(addr) => addr,
-        //         Err(e) => {
-        //             eprintln!("Error following pointer chain at offset 0x{:X}: {}", offset, e);
-        //             return;
-        //         }
-        //     };
-        // }
-
-        self.local_player_id = match self.process.read::<i32>(self.server_ptr + OFFSETS.server_offsets.local_player_id)
+    pub fn update(&mut self) -> Result<(), String> {
+        self.local_player_id = match self
+            .process
+            .read::<i32>(self.server_ptr + OFFSETS.server_offsets.local_player_id)
         {
             Ok(id) => id,
             Err(e) => {
-                eprintln!("Error reading local player ID: {}", e);
-                return;
+                return Err(format!("Error reading local player ID: {}", e));
             }
         };
 
-        self.online_players = match self.process.read::<i32>(self.server_ptr + OFFSETS.server_offsets.online_players)
+        self.online_players = match self
+            .process
+            .read::<i32>(self.server_ptr + OFFSETS.server_offsets.online_players)
         {
             Ok(v) => v,
             Err(e) => {
-                eprintln!("Error reading online players: {}", e);
-                return;
+                return Err(format!("Error reading online players: {}", e));
             }
         };
 
-        self.aim_screen.x = match self.process.read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.x())
+        self.aim_screen.x = match self
+            .process
+            .read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.x())
         {
             Ok(v) => v,
             Err(e) => {
-                eprintln!("Error reading local player aim screen x: {}", e);
-                return;
+                return Err(format!("Error reading aim screen x: {}", e));
             }
         };
 
-        self.aim_screen.y = match self.process.read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.y())
+        self.aim_screen.y = match self
+            .process
+            .read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_screen.y())
         {
             Ok(v) => v,
             Err(e) => {
-                eprintln!("Error reading local player aim screen y: {}", e);
-                return;
+                return Err(format!("Error reading aim screen y: {}", e));
             }
         };
 
-        self.aim_world.x = match self.process.read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_world.x())
+        self.aim_world.x = match self
+            .process
+            .read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_world.x())
         {
             Ok(v) => v,
             Err(e) => {
-                eprintln!("Error reading local player aim world x: {}", e);
-                return;
+                return Err(format!("Error reading aim world x: {}", e));
             }
         };
 
-        self.aim_world.y = match self.process.read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_world.y())
+        self.aim_world.y = match self
+            .process
+            .read::<f32>(self.client_ptr + OFFSETS.client_offsets.aim_pos_world.y())
         {
             Ok(v) => v,
             Err(e) => {
-                eprintln!("Error reading local player aim world y: {}", e);
-                return;
+                return Err(format!("Error reading aim world y: {}", e));
             }
         };
 
@@ -139,29 +135,39 @@ impl CheatCore {
         for i in 0..64 {
             let offset = i * 0xF8;
 
-            let gametick = match self.process.read::<i64>(self.server_ptr + OFFSETS.server_offsets.player_gametick + offset) {
+            let gametick = match self
+                .process
+                .read::<i64>(self.server_ptr + OFFSETS.server_offsets.player_gametick + offset)
+            {
                 Ok(p) => p,
                 Err(e) => {
-                    eprintln!("Error reading player ptr: {}", e);
-                    return;
+                    return Err(format!("Error reading player gametick: {}", e));
                 }
             };
 
-            let pos = match self.process.read::<Coords>(self.server_ptr + OFFSETS.server_offsets.player_pos + offset) {
+            let pos = match self
+                .process
+                .read::<Coords>(self.server_ptr + OFFSETS.server_offsets.player_pos + offset)
+            {
                 Ok(pos) => pos,
                 Err(e) => {
-                    eprintln!("Error reading player pos: {}", e);
-                    return;
+                    return Err(format!("Error reading player pos: {}", e));
                 }
             };
 
-            self.players.push(Player { id: i as i32, gametick, pos });
+            self.players.push(Player {
+                id: i as i32,
+                gametick,
+                pos,
+            });
         }
 
         self.player_pos = match self.players.get(self.local_player_id as usize) {
             Some(player) => player.pos,
             None => Coords { x: 0.0, y: 0.0 },
         };
+
+        Ok(())
     }
 
     pub fn get_local_player_id(&self) -> i32 {
