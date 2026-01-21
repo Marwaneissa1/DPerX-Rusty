@@ -20,19 +20,56 @@
                 [class.status-ready]="gameStatus.process_found"
                 [class.status-waiting]="!gameStatus.process_found"
             >
-                <div class="status-icon">{{ statusIcon }}</div>
+                <div class="status-icon">
+                    @if (gameStatus.process_found) {
+                        <svg
+                            width="32"
+                            height="32"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="3"
+                        >
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    } @else {
+                        <svg
+                            width="32"
+                            height="32"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="3"
+                        >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    }
+                </div>
                 <div class="status-info">
                     <h3 class="status-title">Game Status</h3>
                     <p class="status-message">{{ statusMessage }}</p>
                     @if (gameStatus.process_found) {
                         <div class="status-details">
                             <span class="detail-item">
-                                <span class="detail-icon">🎮</span>
+                                <svg class="detail-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path
+                                        d="M6 9h4v6H6zm8 0h4v6h-4zM3 5v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2z"
+                                    />
+                                </svg>
                                 Process: {{ gameStatus.process_name }}
                             </span>
                             @if (gameStatus.window_found) {
                                 <span class="detail-item">
-                                    <span class="detail-icon">🪟</span>
+                                    <svg
+                                        class="detail-icon"
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                    >
+                                        <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
+                                    </svg>
                                     Window active
                                 </span>
                             }
@@ -45,6 +82,14 @@
         </div>
 
         <div class="action-section">
+            <button class="spoofer-button" (click)="executeLocalSpoofer()" [disabled]="gameStatus.process_found">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>Local Spoofer</span>
+            </button>
+
             <button
                 class="attach-button"
                 [class.disabled]="!canAttach"
@@ -56,17 +101,25 @@
                     <span class="spinner"></span>
                     <span>Connecting...</span>
                 } @else if (canAttach) {
-                    <span>🔗 Connect to Game</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                    <span>Connect to Game</span>
                 } @else {
-                    <span>⏳ Waiting for process...</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>Waiting for process...</span>
                 }
             </button>
 
             @if (!gameStatus.process_found) {
                 <p class="help-text">
-                    Make sure DDNet is running before connecting.
+                    Use Local Spoofer before launching DDNet to backup and remove game folders.
                     <br />
-                    The application will automatically detect the process.
+                    Then launch DDNet and connect to the game.
                 </p>
             }
         </div>
@@ -75,19 +128,63 @@
             <h3 class="features-title">Features</h3>
             <div class="features-grid">
                 <div class="feature-item">
-                    <span class="feature-icon">🎯</span>
+                    <svg
+                        class="feature-icon"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
                     <span class="feature-name">Advanced Aimbot</span>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">⚡</span>
+                    <svg
+                        class="feature-icon"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
                     <span class="feature-name">Hook Prediction</span>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">🔍</span>
+                    <svg
+                        class="feature-icon"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
                     <span class="feature-name">Edge Scanning</span>
                 </div>
                 <div class="feature-item">
-                    <span class="feature-icon">⌨️</span>
+                    <svg
+                        class="feature-icon"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                        <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"></path>
+                    </svg>
                     <span class="feature-name">Trigger Key</span>
                 </div>
             </div>

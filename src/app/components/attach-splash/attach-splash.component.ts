@@ -79,6 +79,17 @@ export class AttachSplashComponent implements OnInit, OnDestroy {
     }
 
     get statusIcon(): string {
-        return this.gameStatus.process_found ? "✓" : "✗";
+        return this.gameStatus.process_found ? "check" : "cross";
+    }
+
+    async executeLocalSpoofer() {
+        try {
+            const result = await invoke<string>("execute_local_spoofer");
+            console.log("Local Spoofer:", result);
+            alert(result);
+        } catch (error) {
+            console.error("Local Spoofer error:", error);
+            alert(`Error: ${error}`);
+        }
     }
 }

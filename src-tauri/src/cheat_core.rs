@@ -60,36 +60,22 @@ impl CheatCore {
         self.player_vel
     }
 
-    pub fn new() -> Self {
-        let process = match Process::from_process_name("ddnet.exe") {
-            Ok(p) => {
-                println!("Found process with PID: {}", p.pid());
-                println!("Module base address: 0x{:X}", p.base_address());
-                p
-            }
-            Err(e) => {
-                eprintln!("Error: {}", e);
-                panic!("Error: {}", e);
-            }
-        };
+    pub fn new() -> Result<Self, String> {
+        let process =
+            Process::from_process_name("ddnet.exe").map_err(|e| format!("Process 'ddnet.exe' not found: {}", e))?;
 
-        let client_ptr = match process.read::<usize>(process.base_address() + OFFSETS.base.client) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("Error reading client base: {}", e);
-                panic!("Error reading client base: {}", e);
-            }
-        };
+        println!("Found process with PID: {}", process.pid());
+        println!("Module base address: 0x{:X}", process.base_address());
 
-        let server_ptr = match process.read::<usize>(process.base_address() + OFFSETS.base.server) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("Error reading server base: {}", e);
-                panic!("Error reading server base: {}", e);
-            }
-        };
+        let client_ptr = process
+            .read::<usize>(process.base_address() + OFFSETS.base.client)
+            .map_err(|e| format!("Error reading client base: {}", e))?;
 
-        Self {
+        let server_ptr = process
+            .read::<usize>(process.base_address() + OFFSETS.base.server)
+            .map_err(|e| format!("Error reading server base: {}", e))?;
+
+        Ok(Self {
             process,
             client_ptr,
             server_ptr,
@@ -101,7 +87,7 @@ impl CheatCore {
             player_vel: Coords { x: 0.0, y: 0.0 },
             shoot_index: AtomicI32::new(0),
             players: Vec::new(),
-        }
+        })
     }
 
     pub fn update(&mut self) -> Result<(), String> {
@@ -252,6 +238,31 @@ impl CheatCore {
         self.process
             .write(self.client_ptr + OFFSETS.client_offsets.fire, &new_index)
             .map_err(|e| format!("Failed to shoot: {}", e))?;
+
+        Ok(())
+    }
+
+    pub fn write_movement(&self, left: bool, right: bool) -> Result<(), String> {
+        let left_val: i32 = if left { 1 } else { 0 };
+        let right_val: i32 = if right { 1 } else { 0 };
+
+        self.process
+            .write(self.client_ptr + OFFSETS.client_offsets.left_dir, &left_val)
+            .map_err(|e| format!("Failed to write left movement: {}", e))?;
+
+        self.process
+            .write(self.client_ptr + OFFSETS.client_offsets.right_dir, &right_val)
+            .map_err(|e| format!("Failed to write right movement: {}", e))?;
+
+        Ok(())
+    }
+
+    pub fn write_hook(&self, enabled: bool) -> Result<(), String> {
+        let hook_val: i32 = if enabled { 1 } else { 0 };
+
+        self.process
+            .write(self.client_ptr + OFFSETS.client_offsets.hook, &hook_val)
+            .map_err(|e| format!("Failed to write hook: {}", e))?;
 
         Ok(())
     }

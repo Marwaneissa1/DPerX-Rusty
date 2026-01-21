@@ -70,4 +70,10 @@ export class OptionItemComponent implements DoCheck {
     onChildValueChange(event: { id: string; value: any }) {
         this.valueChange.emit(event);
     }
+
+    onButtonClick(): void {
+        if (this.field.type === "button") {
+            this.valueChange.emit({ id: this.field.id, value: this.field.value });
+        }
+    }
 }

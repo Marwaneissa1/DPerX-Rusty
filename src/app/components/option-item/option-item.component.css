@@ -103,3 +103,32 @@
         padding-left: var(--spacing-md);
     }
 }
+
+.action-button {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--color-accent-primary);
+    color: var(--color-text-on-accent);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.action-button:hover:not(:disabled) {
+    background: var(--color-accent-secondary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.action-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

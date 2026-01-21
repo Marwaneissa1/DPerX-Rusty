@@ -169,6 +169,43 @@
 .action-section {
     text-align: center;
     margin-bottom: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.spoofer-button {
+    width: 100%;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    box-shadow: 0 4px 20px rgba(156, 39, 176, 0.3);
+}
+
+.spoofer-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 30px rgba(156, 39, 176, 0.4);
+}
+
+.spoofer-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.spoofer-button:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: #8b92a8;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .attach-button {

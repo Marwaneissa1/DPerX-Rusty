@@ -1,4 +1,6 @@
 mod aimbot;
+mod auto_tower;
+mod balancer;
 mod cheat_core;
 mod input_hook;
 
@@ -6,9 +8,13 @@ mod ioprocesses;
 mod offsets;
 
 use aimbot::{Aimbot, AimbotStatus};
+use auto_tower::{AutoTower, AutoTowerAction};
+use balancer::{Balancer, MovementDirection};
 use cheat_core::{CheatCore, Coords};
 use input_hook::{vk_code_from_string, InputHook};
 use parking_lot::{Mutex, RwLock};
+use std::fs;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -16,6 +22,8 @@ use std::time::Duration;
 struct AppState {
     cheat_core: Option<CheatCore>,
     aimbot: Aimbot,
+    balancer: Balancer,
+    auto_tower: AutoTower,
     is_attached: bool,
 }
 
@@ -51,6 +59,8 @@ fn attach() -> Result<String, String> {
         let state = Arc::new(Mutex::new(AppState {
             cheat_core: None,
             aimbot: Aimbot::new(),
+            balancer: Balancer::new(),
+            auto_tower: AutoTower::new(),
             is_attached: false,
         }));
         *global = Some(state.clone());
@@ -104,7 +114,6 @@ fn attach() -> Result<String, String> {
                 }
 
                 if should_update {
-
                     let should_aim = config.always_active || InputHook::is_trigger_key_pressed();
 
                     if should_aim {
@@ -113,6 +122,47 @@ fn attach() -> Result<String, String> {
                             if let Some(ref core) = state.cheat_core {
                                 let _ = core.write_aim_position(aim_pos);
                             }
+                        }
+                    }
+                }
+
+                let movement_dir = state.balancer.update(local_id, local_pos, &players);
+                let auto_tower_action = state.auto_tower.update(local_id, local_pos, &players);
+
+                if let Some(ref core) = state.cheat_core {
+                    match auto_tower_action {
+                        AutoTowerAction::MoveLeft => {
+                            let _ = core.write_movement(true, false);
+                            let _ = core.write_hook(false);
+                        }
+                        AutoTowerAction::MoveRight => {
+                            let _ = core.write_movement(false, true);
+                            let _ = core.write_hook(false);
+                        }
+                        AutoTowerAction::Hook {
+                            target_pos,
+                            should_fire,
+                        } => {
+                            let _ = core.write_movement(false, false);
+                            let _ = core.write_aim_position(target_pos);
+                            let _ = core.write_hook(true);
+                            if should_fire {
+                                let _ = core.shoot();
+                            }
+                        }
+                        AutoTowerAction::None => {
+                            match movement_dir {
+                                MovementDirection::Left => {
+                                    let _ = core.write_movement(true, false);
+                                }
+                                MovementDirection::Right => {
+                                    let _ = core.write_movement(false, true);
+                                }
+                                MovementDirection::None => {
+                                    let _ = core.write_movement(false, false);
+                                }
+                            }
+                            let _ = core.write_hook(false);
                         }
                     }
                 }
@@ -125,7 +175,14 @@ fn attach() -> Result<String, String> {
 
     let mut state = state_arc.lock();
 
-    let core = CheatCore::new();
+    let core = match CheatCore::new() {
+        Ok(c) => c,
+        Err(e) => {
+            state.is_attached = false;
+            return Err(format!("Failed to attach: {}", e));
+        }
+    };
+
     state.cheat_core = Some(core);
     state.is_attached = true;
     Ok("Successfully attached to process".to_string())
@@ -324,6 +381,184 @@ fn unregister_trigger_key() -> Result<String, String> {
     Ok("Trigger key unregistered".to_string())
 }
 
+#[tauri::command]
+fn set_balancer_enabled(enabled: bool) -> Result<String, String> {
+    let global = GLOBAL_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let mut state = state_arc.lock();
+        let mut config = state.balancer.get_config().lock().clone();
+        config.enabled = enabled;
+        state.balancer.set_config(config);
+        Ok(format!("Balancer {}", if enabled { "enabled" } else { "disabled" }))
+    } else {
+        Err("Not currently attached".to_string())
+    }
+}
+
+#[derive(serde::Serialize)]
+struct BalancerStatus {
+    enabled: bool,
+}
+
+#[tauri::command]
+fn get_balancer_status() -> Result<BalancerStatus, String> {
+    let global = GLOBAL_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let state = state_arc.lock();
+        let config_guard = state.balancer.get_config();
+        let config = config_guard.lock();
+        Ok(BalancerStatus {
+            enabled: config.enabled,
+        })
+    } else {
+        Err("Not currently attached".to_string())
+    }
+}
+
+#[tauri::command]
+fn set_auto_tower_enabled(enabled: bool) -> Result<String, String> {
+    let global = GLOBAL_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let mut state = state_arc.lock();
+        let mut config = state.auto_tower.get_config().lock().clone();
+        config.enabled = enabled;
+        state.auto_tower.set_config(config);
+        Ok(format!("Auto Tower {}", if enabled { "enabled" } else { "disabled" }))
+    } else {
+        Err("Not currently attached".to_string())
+    }
+}
+
+#[tauri::command]
+fn set_auto_tower_key(key: String) -> Result<String, String> {
+    let global = GLOBAL_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        if let Some(vk_code) = vk_code_from_string(&key) {
+            let mut state = state_arc.lock();
+            let mut config = state.auto_tower.get_config().lock().clone();
+            config.trigger_key = Some(vk_code);
+            state.auto_tower.set_config(config);
+            Ok(format!("Auto Tower key set to '{}'", key))
+        } else {
+            Err(format!("Invalid key: {}", key))
+        }
+    } else {
+        Err("Not currently attached".to_string())
+    }
+}
+
+#[derive(serde::Serialize)]
+struct AutoTowerStatus {
+    enabled: bool,
+    trigger_key: Option<String>,
+}
+
+#[tauri::command]
+fn get_auto_tower_status() -> Result<AutoTowerStatus, String> {
+    let global = GLOBAL_STATE.read();
+
+    if let Some(state_arc) = global.as_ref() {
+        let state = state_arc.lock();
+        let config_guard = state.auto_tower.get_config();
+        let config = config_guard.lock();
+
+        let key_string = config.trigger_key.map(|vk| format!("{}", vk));
+
+        Ok(AutoTowerStatus {
+            enabled: config.enabled,
+            trigger_key: key_string,
+        })
+    } else {
+        Err("Not currently attached".to_string())
+    }
+}
+
+fn copy_dir_all(src: &PathBuf, dst: &PathBuf) -> Result<(), String> {
+    if !src.exists() {
+        return Err(format!("Source folder does not exist: {:?}", src));
+    }
+
+    fs::create_dir_all(dst).map_err(|e| format!("Failed to create destination folder: {}", e))?;
+
+    for entry in fs::read_dir(src).map_err(|e| format!("Failed to read source directory: {}", e))? {
+        let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+        let ty = entry
+            .file_type()
+            .map_err(|e| format!("Failed to get file type: {}", e))?;
+        let src_path = entry.path();
+        let dst_path = dst.join(entry.file_name());
+
+        if ty.is_dir() {
+            copy_dir_all(&src_path, &dst_path)?;
+        } else {
+            fs::copy(&src_path, &dst_path).map_err(|e| format!("Failed to copy file: {}", e))?;
+        }
+    }
+
+    Ok(())
+}
+
+fn get_desktop_path() -> Result<PathBuf, String> {
+    let userprofile = std::env::var("USERPROFILE").map_err(|_| "Failed to get USERPROFILE")?;
+    Ok(PathBuf::from(userprofile).join("Desktop"))
+}
+
+#[tauri::command]
+fn execute_local_spoofer() -> Result<String, String> {
+    use ioprocesses::Process;
+
+    // Check if DDNet process is running
+    if Process::from_process_name("ddnet.exe").is_ok() {
+        return Err("Cannot execute Local Spoofer while DDNet is running. Please close the game first.".to_string());
+    }
+
+    let appdata = std::env::var("APPDATA").map_err(|_| "Failed to get APPDATA path")?;
+    let desktop = get_desktop_path()?;
+
+    let mut backed_up = Vec::new();
+    let mut errors = Vec::new();
+
+    let ddnet_src = PathBuf::from(&appdata).join("DDNet");
+    let ddnet_dst = desktop.join("DDNet_backup");
+
+    if ddnet_src.exists() {
+        match copy_dir_all(&ddnet_src, &ddnet_dst) {
+            Ok(_) => match fs::remove_dir_all(&ddnet_src) {
+                Ok(_) => backed_up.push("DDNet"),
+                Err(e) => errors.push(format!("Failed to delete DDNet from AppData: {}", e)),
+            },
+            Err(e) => errors.push(format!("Failed to backup DDNet: {}", e)),
+        }
+    }
+
+    let teeworlds_src = PathBuf::from(&appdata).join("TeeWorlds");
+    let teeworlds_dst = desktop.join("TeeWorlds_backup");
+
+    if teeworlds_src.exists() {
+        match copy_dir_all(&teeworlds_src, &teeworlds_dst) {
+            Ok(_) => match fs::remove_dir_all(&teeworlds_src) {
+                Ok(_) => backed_up.push("TeeWorlds"),
+                Err(e) => errors.push(format!("Failed to delete TeeWorlds from AppData: {}", e)),
+            },
+            Err(e) => errors.push(format!("Failed to backup TeeWorlds: {}", e)),
+        }
+    }
+
+    if backed_up.is_empty() && errors.is_empty() {
+        return Err("No folders found to backup (DDNet and TeeWorlds not found in AppData)".to_string());
+    }
+
+    if !errors.is_empty() {
+        return Err(format!("Errors occurred: {}", errors.join("; ")));
+    }
+
+    Ok(format!("Successfully backed up and removed: {}", backed_up.join(", ")))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 #[allow(unused)]
 pub fn run() {
@@ -340,6 +575,12 @@ pub fn run() {
             get_aimbot_status,
             register_trigger_key,
             unregister_trigger_key,
+            set_balancer_enabled,
+            get_balancer_status,
+            set_auto_tower_enabled,
+            set_auto_tower_key,
+            get_auto_tower_status,
+            execute_local_spoofer,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

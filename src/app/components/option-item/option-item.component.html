@@ -64,5 +64,11 @@
         @if (field.type === "key") {
             <app-key-picker [(ngModel)]="field.value" [disabled]="field.disabled ?? false"></app-key-picker>
         }
+
+        @if (field.type === "button") {
+            <button class="action-button" (click)="onButtonClick()" [disabled]="field.disabled ?? false">
+                {{ field.value || "Execute" }}
+            </button>
+        }
     </div>
 }
