@@ -511,7 +511,6 @@ fn get_desktop_path() -> Result<PathBuf, String> {
 fn execute_local_spoofer() -> Result<String, String> {
     use ioprocesses::Process;
 
-    // Check if DDNet process is running
     if Process::from_process_name("ddnet.exe").is_ok() {
         return Err("Cannot execute Local Spoofer while DDNet is running. Please close the game first.".to_string());
     }
