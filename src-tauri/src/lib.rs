@@ -127,45 +127,45 @@ fn attach() -> Result<String, String> {
                 }
 
                 let movement_dir = state.balancer.update(local_id, local_pos, &players);
-                let auto_tower_action = state.auto_tower.update(local_id, local_pos, &players);
+                // let auto_tower_action = state.auto_tower.update(local_id, local_pos, &players);
 
-                if let Some(ref core) = state.cheat_core {
-                    match auto_tower_action {
-                        AutoTowerAction::MoveLeft => {
-                            let _ = core.write_movement(true, false);
-                            let _ = core.write_hook(false);
-                        }
-                        AutoTowerAction::MoveRight => {
-                            let _ = core.write_movement(false, true);
-                            let _ = core.write_hook(false);
-                        }
-                        AutoTowerAction::Hook {
-                            target_pos,
-                            should_fire,
-                        } => {
-                            let _ = core.write_movement(false, false);
-                            let _ = core.write_aim_position(target_pos);
-                            let _ = core.write_hook(true);
-                            if should_fire {
-                                let _ = core.shoot();
-                            }
-                        }
-                        AutoTowerAction::None => {
-                            match movement_dir {
-                                MovementDirection::Left => {
-                                    let _ = core.write_movement(true, false);
-                                }
-                                MovementDirection::Right => {
-                                    let _ = core.write_movement(false, true);
-                                }
-                                MovementDirection::None => {
-                                    let _ = core.write_movement(false, false);
-                                }
-                            }
-                            let _ = core.write_hook(false);
-                        }
-                    }
-                }
+                // if let Some(ref core) = state.cheat_core {
+                //     match auto_tower_action {
+                //         AutoTowerAction::MoveLeft => {
+                //             let _ = core.write_movement(true, false);
+                //             let _ = core.write_hook(false);
+                //         }
+                //         AutoTowerAction::MoveRight => {
+                //             let _ = core.write_movement(false, true);
+                //             let _ = core.write_hook(false);
+                //         }
+                //         AutoTowerAction::Hook {
+                //             target_pos,
+                //             should_fire,
+                //         } => {
+                //             let _ = core.write_movement(false, false);
+                //             let _ = core.write_aim_position(target_pos);
+                //             let _ = core.write_hook(true);
+                //             if should_fire {
+                //                 let _ = core.shoot();
+                //             }
+                //         }
+                //         AutoTowerAction::None => {
+                //             match movement_dir {
+                //                 MovementDirection::Left => {
+                //                     let _ = core.write_movement(true, false);
+                //                 }
+                //                 MovementDirection::Right => {
+                //                     let _ = core.write_movement(false, true);
+                //                 }
+                //                 MovementDirection::None => {
+                //                     let _ = core.write_movement(false, false);
+                //                 }
+                //             }
+                //             let _ = core.write_hook(false);
+                //         }
+                //     }
+                // }
             }
         });
     }
@@ -250,7 +250,7 @@ fn get_game_status() -> Result<GameStatus, String> {
             let players_data = core.get_players();
             let players_info: Vec<PlayerInfo> = players_data
                 .iter()
-                .filter(|p| p.gametick > 0)
+                // .filter(|p| p.gametick > 0)
                 .map(|p| PlayerInfo {
                     id: p.id,
                     gametick: p.gametick,

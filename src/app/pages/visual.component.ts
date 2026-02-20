@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { OptionsComponent } from "../components/options/options.component";
 import { OptionField } from "../_models/option-field.model";
 
@@ -8,7 +8,7 @@ import { OptionField } from "../_models/option-field.model";
     imports: [OptionsComponent],
     template: '<app-options [fields]="fields"></app-options>',
 })
-export class VisualComponent {
+export class VisualComponent implements OnInit {
     fields: OptionField[] = [
         {
             id: "espDisplay",
@@ -55,4 +55,28 @@ export class VisualComponent {
             ],
         },
     ];
+
+    ngOnInit() {
+        this.fields.forEach(group => {
+            if (group.children) {
+                group.children.forEach(field => {
+                    if (field.id !== 'aimbotKey') {
+                        this.onValueChange({ id: field.id, value: field.value });
+                    }
+                });
+            }
+        });
+
+        setTimeout(() => {
+            const aimbotKeyField = this.fields
+                .flatMap(group => group.children || [])
+                .find(field => field.id === 'aimbotKey');
+            if (aimbotKeyField) {
+                this.onValueChange({ id: aimbotKeyField.id, value: aimbotKeyField.value });
+            }
+        }, 100);
+    }
+
+    async onValueChange(event: { id: string; value: any }) {
+    }
 }

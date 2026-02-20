@@ -10,10 +10,6 @@ import { AimbotService } from "../_services/aimbot.service";
     template: '<app-options [fields]="fields" (valueChange)="onValueChange($event)"></app-options>',
 })
 export class CombatComponent implements OnInit {
-    constructor(private aimbotService: AimbotService) {}
-
-    ngOnInit() {}
-
     fields: OptionField[] = [
         {
             id: "aimbot",
@@ -23,7 +19,7 @@ export class CombatComponent implements OnInit {
             children: [
                 { id: "aimbot", label: "Aimbot", type: "checkbox", value: false },
                 { id: "alwaysActive", label: "Always Active", type: "checkbox", value: false },
-                { id: "aimbotKey", label: "Aimbot Key", type: "key", value: "SHIFT" },
+                { id: "aimbotKey", label: "Aimbot Key", type: "key", value: "F" },
                 { id: "aimbotFov", label: "FOV Size", type: "slider", value: 90, min: 0, max: 360, step: 2 },
                 {
                     id: "aimbotMaxDistance",
@@ -72,6 +68,29 @@ export class CombatComponent implements OnInit {
             ],
         },
     ];
+
+    constructor(private aimbotService: AimbotService) {}
+
+    ngOnInit() {
+        this.fields.forEach(group => {
+            if (group.children) {
+                group.children.forEach(field => {
+                    if (field.id !== 'aimbotKey') {
+                        this.onValueChange({ id: field.id, value: field.value });
+                    }
+                });
+            }
+        });
+
+        setTimeout(() => {
+            const aimbotKeyField = this.fields
+                .flatMap(group => group.children || [])
+                .find(field => field.id === 'aimbotKey');
+            if (aimbotKeyField) {
+                this.onValueChange({ id: aimbotKeyField.id, value: aimbotKeyField.value });
+            }
+        }, 100);
+    }
 
     async onValueChange(event: { id: string; value: any }) {
         let response;

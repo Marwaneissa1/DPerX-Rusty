@@ -264,6 +264,7 @@
     border-radius: 8px;
     overflow: hidden;
     transition: all 0.2s ease;
+    min-height: 50px;
 }
 
 .player-item:hover {
@@ -274,6 +275,7 @@
 .player-item.expanded {
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--color-accent-primary);
+    min-height: 350px;
 }
 
 .player-item.local-player {

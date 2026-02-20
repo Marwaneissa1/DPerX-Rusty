@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { OptionsComponent } from "../components/options/options.component";
 import { OptionField } from "../_models/option-field.model";
 import { BalancerService } from "../_services/balancer.service";
@@ -10,12 +10,7 @@ import { AutoTowerService } from "../_services/auto-tower.service";
     imports: [OptionsComponent],
     template: '<app-options [fields]="fields" (valueChange)="onValueChange($event)"></app-options>',
 })
-export class GameplayComponent {
-    constructor(
-        private balancerService: BalancerService,
-        private autoTowerService: AutoTowerService
-    ) {}
-
+export class GameplayComponent implements OnInit {
     fields: OptionField[] = [
         {
             id: "automation",
@@ -24,11 +19,37 @@ export class GameplayComponent {
             expanded: true,
             children: [
                 { id: "balancer", label: "Balancer", type: "checkbox", value: false },
-                { id: "autoTower", label: "Auto Tower", type: "checkbox", value: false },
-                { id: "autoTowerKey", label: "Auto Tower Key", type: "key", value: "E" },
+                // { id: "autoTower", label: "Auto Tower", type: "checkbox", value: false },
+                // { id: "autoTowerKey", label: "Auto Tower Key", type: "key", value: "E" },
             ],
         },
     ];
+    
+    constructor(
+        private balancerService: BalancerService,
+        private autoTowerService: AutoTowerService
+    ) {}
+
+    ngOnInit() {
+        this.fields.forEach(group => {
+            if (group.children) {
+                group.children.forEach(field => {
+                    if (field.id !== 'aimbotKey') {
+                        this.onValueChange({ id: field.id, value: field.value });
+                    }
+                });
+            }
+        });
+
+        setTimeout(() => {
+            const aimbotKeyField = this.fields
+                .flatMap(group => group.children || [])
+                .find(field => field.id === 'aimbotKey');
+            if (aimbotKeyField) {
+                this.onValueChange({ id: aimbotKeyField.id, value: aimbotKeyField.value });
+            }
+        }, 100);
+    }
 
     async onValueChange(event: { id: string; value: any }) {
         if (event.id === "balancer") {
